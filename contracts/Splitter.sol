@@ -1,55 +1,36 @@
 pragma solidity >=0.4.21 < 0.6.0;
 
 contract Splitter {
-    address public admin;
 
-    constructor() public {
-        admin = msg.sender;
+    mapping(uint => address) people;
+    mapping(address => uint) personCount;
+    mapping(address => uint) funds;
+
+    uint private cont = 0;
+
+    function add() public {
+        require (personCount[msg.sender] == 0);
+
+        people[cont] = msg.sender;
+        personCount[msg.sender]++;
+        cont++;
     }
 
-    struct People {
-        string name;
-        address payable addr;
-    }
+    function setFunds() payable external {
+        require(msg.value > 0 ether);
 
-    People[] public person;
+        uint amount = msg.value / (cont - 1);
 
-    function setPerson() public {
-        require(admin != msg.sender);
-        require(person.length < 3);
-        require(checkUniqueAddress());
-
-        People memory p = People(getPersonName(), msg.sender);
-        person.push(p);
-    }
-
-    function checkUniqueAddress() private view returns (bool) {
-        for (uint i=0; i < person.length; i++) {
-            if (person[i].addr == msg.sender) {
-                return false;
+        for (uint i=0; i < cont; i++) {
+            if (msg.sender != people[i]) {
+                funds[people[i]] = amount;
             }
         }
-        return true;
     }
 
-    function getPersonName() internal view returns (string memory) {
-        uint pLength = person.length;
-
-        if (pLength == 0) return "Alice";
-        if (pLength == 1) return "Bob";
-        if (pLength == 2) return "Carol";
-    }
-
-    function sendEth() public payable {
-        require(msg.value > 0);
-        require(person[0].addr == msg.sender);
-
-        person[1].addr.transfer(msg.value / 2);
-        person[2].addr.transfer(msg.value / 2);
-    }
-
-    function getAdmin() public view returns (address) {
-        return admin;
+    function withdraw() external {
+        uint fund = funds[msg.sender];
+        funds[msg.sender] = 0;
+        msg.sender.transfer(fund);
     }
 }
-
