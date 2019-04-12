@@ -5,45 +5,30 @@ const truffleAssert = require('truffle-assertions');
 contract("Splitter", function(accounts) {
     let splitterInstance;
 
-    let Admin = accounts[0];
-    let Alice = accounts[1];
-    let Bob = accounts[2];
-    let Carol = accounts[3];
-
-    it("throw an exception if the admin try to set a person", async () => {
-        splitterInstance = await Splitter.deployed();
-         await truffleAssert.reverts(splitterInstance.setPerson({from: Admin}));
-    });
-
     it("throw an exception if the person try to use the setPerson function more than one time", async () => {
         splitterInstance = await Splitter.deployed();
-        const person1 = await splitterInstance.setPerson({from: Alice});
-        await truffleAssert.reverts(splitterInstance.setPerson({from: Alice}));
+        const person1 = await splitterInstance.add({from: accounts[6]});
+        await truffleAssert.reverts(splitterInstance.add({from: accounts[6]}));
     });
 
-    it("should send 1 ether for each account", async () => {
+    it("split the correct values between five accounts", async () => {
         splitterInstance = await Splitter.deployed();
+        const amount = 0.15;
 
-        await splitterInstance.setPerson({from: Bob});
-        await splitterInstance.setPerson({from: Carol});
+        await splitterInstance.add({from: accounts[0]});
+        await splitterInstance.add({from: accounts[1]});
+        await splitterInstance.add({from: accounts[2]});
+        await splitterInstance.add({from: accounts[3]});
+        await splitterInstance.add({from: accounts[4]});
+        await splitterInstance.add({from: accounts[5]});
 
-        const amount = 2;
-        const amountHalf = amount / 2;
+        await splitterInstance.setFunds({from: accounts[0], value: web3.utils.toWei(amount.toString())});
 
-        // Get initial balances.
-        const bobInitialBalance = await web3.eth.getBalance(Bob);
-        const carolInitialBalance = await web3.eth.getBalance(Carol);
-
-        // send the ether
-        await splitterInstance.sendEth({from: Alice, to: Bob, value: web3.utils.toWei(amountHalf.toString())});
-        await splitterInstance.sendEth({from: Alice, to: Carol, value: web3.utils.toWei(amountHalf.toString())});
-
-        // Get final balances.
-        const bobFinalBalance = await web3.eth.getBalance(Bob);
-        const carolFinalBalance = await web3.eth.getBalance(Carol);
-
-        // Sum the initial balance with 1 ether ( in wei )
-        assert.equal(parseInt(bobInitialBalance) + 1000000000000000000, bobFinalBalance, "Wrong amount");
-        assert.equal(parseInt(carolInitialBalance) + 1000000000000000000, carolFinalBalance, "Wrong amount");
+        await splitterInstance.withdraw({from: accounts[0]});
+        await splitterInstance.withdraw({from: accounts[1]});
+        await splitterInstance.withdraw({from: accounts[2]});
+        await splitterInstance.withdraw({from: accounts[3]});
+        await splitterInstance.withdraw({from: accounts[4]});
+        await splitterInstance.withdraw({from: accounts[5]});
     });
 });
